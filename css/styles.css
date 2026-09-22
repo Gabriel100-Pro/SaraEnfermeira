@@ -186,30 +186,176 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .nav__link.is-active { color: var(--ink); }
 .nav__link.is-active::after { transform: scaleX(1); opacity: 0.55; }
 
-/* Hamburger (somente mobile) */
+/* Hamburger (somente mobile) — 3 riscos finos que viram um "X" */
 .nav-toggle {
+  --bar-h: 1.5px;
+  --bar-gap: 5px;
+  --bar-shift: calc(var(--bar-h) + var(--bar-gap));   /* distância do risco 1/3 até o centro */
   display: none;
   width: 44px;
   height: 44px;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--bar-gap);
   margin-right: -8px;
 }
 .nav-toggle__bar {
   display: block;
   width: 24px;
-  height: 1.5px;
+  height: var(--bar-h);
+  border-radius: 2px;
   background: var(--ink-soft);
-  transition: transform 400ms var(--ease-out);
+  transform-origin: 50% 50%;
+  transition:
+    transform 340ms var(--ease-out),
+    opacity 340ms var(--ease-out);
 }
-.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(1) { transform: translateY(3.75px) rotate(45deg); }
-.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(2) { transform: translateY(-3.75px) rotate(-45deg); }
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(1) { transform: translateY(var(--bar-shift)) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(2) { opacity: 0; transform: scaleX(0.6); }
+.nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(3) { transform: translateY(calc(-1 * var(--bar-shift))) rotate(-45deg); }
 
 /* Estado carregado */
 .is-loaded .logo { opacity: 1; transform: none; }
 .is-loaded .nav__item { opacity: 1; transform: none; }
+
+/* =====================================================================
+   MENU MOBILE — banner central (o header desktop permanece intacto)
+   ===================================================================== */
+body.menu-open { overflow: hidden; }
+
+.menu { display: none; }
+
+@media (max-width: 768px) {
+  /* o header sobe acima do overlay para o "X" continuar clicável */
+  .header { z-index: 70; }
+  body.menu-open .header {
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    border-bottom-color: transparent;
+  }
+
+  .menu {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    visibility: hidden;
+    transition: visibility 0s linear 560ms;
+  }
+  .menu.is-open { visibility: visible; transition: visibility 0s; }
+
+  /* ---- overlay: o site continua visível ao fundo, porém desfocado ---- */
+  .menu__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(40, 34, 28, 0.28);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 420ms var(--ease-out);
+  }
+  .menu.is-open .menu__overlay { opacity: 1; }
+
+  /* ---- banner ---- */
+  .menu__panel {
+    position: relative;
+    width: min(88vw, 420px);
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: clamp(28px, 7vw, 36px) clamp(24px, 6vw, 34px);
+    border-radius: 28px;
+    background: rgba(234, 233, 228, 0.96);
+    border: 1px solid rgba(139, 117, 99, 0.18);
+    box-shadow: 0 24px 60px -30px rgba(70, 50, 35, 0.38);
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+    filter: blur(4px);
+    transition:
+      opacity 480ms var(--ease-out),
+      transform 480ms var(--ease-out),
+      filter 480ms var(--ease-out);
+  }
+  .menu.is-open .menu__panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+
+  /* ---- logo: mesmo asset do header, em escala menor ---- */
+  .menu__logo {
+    display: block;
+    width: clamp(104px, 30vw, 124px);
+    margin: 0 auto;
+    aspect-ratio: 1958 / 803;
+    background-color: var(--ink-line);
+    -webkit-mask: url("../Assets/img-logo.png") center / contain no-repeat;
+    mask: url("../Assets/img-logo.png") center / contain no-repeat;
+    opacity: 0.92;
+  }
+
+  .menu__list { margin-top: clamp(18px, 4.5vw, 26px); }
+
+  /* ---- links: entrada em cascata (120ms → 360ms) ---- */
+  .menu__item {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+  }
+  .menu__item + .menu__item { border-top: 1px solid rgba(139, 117, 99, 0.16); }
+  .menu.is-open .menu__item {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(120ms + var(--i, 0) * 60ms);
+  }
+
+  .menu__link {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: clamp(12px, 3.2vw, 16px) 2px;
+    color: var(--ink);
+    transition: color 300ms var(--ease-out), transform 300ms var(--ease-out);
+  }
+  .menu__num {
+    flex: 0 0 auto;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    transition: color 300ms var(--ease-out);
+  }
+  .menu__label {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(1.26rem, 5.4vw, 1.5rem);
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+  }
+  .menu__link:hover,
+  .menu__link:focus-visible,
+  .menu__link:active { color: var(--caramel-deeper); transform: translateX(3px); }
+  .menu__link:hover .menu__num,
+  .menu__link:focus-visible .menu__num,
+  .menu__link:active .menu__num { color: var(--caramel-deep); }
+
+  /* ---- página/seção atual ---- */
+  .menu__link.is-active { color: var(--caramel-deep); }
+  .menu__link.is-active .menu__num { color: var(--caramel); }
+
+  /* telas muito baixas: o banner encolhe antes de rolar */
+  @media (max-height: 560px) {
+    .menu__panel { padding-block: 22px; }
+    .menu__logo { width: 92px; }
+    .menu__list { margin-top: 14px; }
+    .menu__link { padding-block: 10px; }
+  }
+}
 
 /* =====================================================================
    BOTÕES
@@ -2715,46 +2861,15 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
   }
 }
 
-/* ---- Menu mobile + Hero mobile ---- */
+/* ---- Header mobile + Hero mobile ---- */
 @media (max-width: 768px) {
   :root { --header-h: 64px; }
   .logo__img { width: clamp(140px, 38vw, 160px); }
 
   .nav-toggle { display: flex; }
 
-  .nav {
-    position: fixed;
-    top: var(--header-h);
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 8px var(--gutter) 24px;
-    background: rgba(var(--cream-rgb), 0.94);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(80, 60, 45, 0.08);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out), visibility 0s linear 400ms;
-  }
-  .nav.is-open {
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out), visibility 0s;
-  }
-  .nav__list { flex-direction: column; align-items: stretch; gap: 0; }
-  .nav__item { transition-delay: 0ms; }
-  .nav__link {
-    display: block;
-    padding: 18px 0;
-    font-size: 1.35rem;
-    border-bottom: 1px solid rgba(80, 60, 45, 0.08);
-  }
-  .nav__link::after { display: none; }
+  /* a navegação do header dá lugar ao banner central (.menu) */
+  .nav { display: none; }
 
   .hero__tags { display: none; }
   .hero__inner { padding-bottom: clamp(64px, 12vh, 120px); }
@@ -2852,4 +2967,27 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
   .carousel__slide { transition: opacity 250ms ease; }
   .carousel__slide img { transition: none; }
   .btn, .btn__arrow, .carousel__btn, .carousel__dot, .nav__link::after, .header { transition-duration: 120ms; }
+
+  /* menu mobile: sem blur, sem escala e sem deslocamentos — só opacidade */
+  .menu { transition: visibility 0s linear 200ms; }
+  .menu.is-open { transition: visibility 0s; }
+  .menu__overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(40, 34, 28, 0.45);
+    transition: opacity 180ms linear;
+  }
+  .menu__panel {
+    transform: none !important;
+    filter: none !important;
+    transition: opacity 180ms linear;
+  }
+  .menu__item {
+    transform: none !important;
+    transition: opacity 180ms linear !important;
+    transition-delay: 0ms !important;
+  }
+  .menu__link { transition-duration: 120ms; }
+  .menu__link:hover, .menu__link:focus-visible, .menu__link:active { transform: none !important; }
+  .nav-toggle__bar { transition-duration: 120ms; }
 }

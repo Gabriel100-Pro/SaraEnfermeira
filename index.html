@@ -22,7 +22,8 @@
         <span class="logo__img" role="img" aria-hidden="true"></span>
       </a>
 
-      <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav">
+      <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu">
+        <span class="nav-toggle__bar"></span>
         <span class="nav-toggle__bar"></span>
         <span class="nav-toggle__bar"></span>
       </button>
@@ -38,6 +39,25 @@
       </nav>
     </div>
   </header>
+
+  <!-- ===================== MENU MOBILE (banner central) ===================== -->
+  <div class="menu" id="mobileMenu">
+    <div class="menu__overlay" data-menu-close></div>
+
+    <div class="menu__panel" role="dialog" aria-modal="true" aria-label="Menu de navegação">
+      <span class="menu__logo" role="img" aria-label="Sara Almeida – Enfermeira"></span>
+
+      <nav class="menu__nav" aria-label="Navegação do menu">
+        <ul class="menu__list">
+          <li class="menu__item" style="--i: 0"><a class="menu__link" href="index.html"><span class="menu__num" aria-hidden="true">01</span><span class="menu__label">Início</span></a></li>
+          <li class="menu__item" style="--i: 1"><a class="menu__link" href="index.html#sobre"><span class="menu__num" aria-hidden="true">02</span><span class="menu__label">Sobre</span></a></li>
+          <li class="menu__item" style="--i: 2"><a class="menu__link" href="index.html#servicos"><span class="menu__num" aria-hidden="true">03</span><span class="menu__label">Serviços</span></a></li>
+          <li class="menu__item" style="--i: 3"><a class="menu__link" href="atendimento.html#como-funciona"><span class="menu__num" aria-hidden="true">04</span><span class="menu__label">Como funciona</span></a></li>
+          <li class="menu__item" style="--i: 4"><a class="menu__link" href="atendimento.html#contato"><span class="menu__num" aria-hidden="true">05</span><span class="menu__label">Contato</span></a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
 
   <main class="page-main">
     <!-- ===================== HERO ===================== -->
@@ -209,7 +229,6 @@
                 <ul class="carousel__track">
                   <li class="carousel__slide"><img src="Assets/img - paciente - 1.jpeg" alt="Paciente sorrindo durante atendimento domiciliar" style="object-position: 50% 62%" loading="lazy" decoding="async"></li>
                   <li class="carousel__slide"><img src="Assets/img - paciente - 2.jpeg" alt="Paciente em casa durante acompanhamento de enfermagem" style="object-position: 50% 55%" loading="lazy" decoding="async"></li>
-                  <li class="carousel__slide"><img src="Assets/img - paciente - 3.jpeg" alt="Paciente idosa recebendo cuidado de enfermagem em casa" style="object-position: 50% 35%" loading="lazy" decoding="async"></li>
                 </ul>
               </div>
 

@@ -33,36 +33,39 @@
      ESTADO ATIVO DO MENU (conforme a seção visível na página atual)
      ===================================================================== */
   function initActiveNav() {
-    const links = Array.from(document.querySelectorAll('.nav__link'));
+    // Header desktop e banner mobile apontam para as mesmas seções
+    const links = Array.from(document.querySelectorAll('.nav__link, .menu__link'));
     if (!links.length) return;
 
     const currentFile = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     const entries = [];
-    let homeLink = null;
+    const homeLinks = [];
 
     links.forEach((link) => {
       let url;
       try { url = new URL(link.getAttribute('href'), location.href); } catch (e) { return; }
       const file = (url.pathname.split('/').pop() || 'index.html').toLowerCase();
       if (file !== currentFile) return;
-      if (!url.hash) { homeLink = link; return; }
+      if (!url.hash) { homeLinks.push(link); return; }
       const target = document.getElementById(url.hash.slice(1));
       if (target) entries.push({ link, target });
     });
 
-    if (!entries.length && !homeLink) return;
+    if (!entries.length && !homeLinks.length) return;
 
     let ticking = false;
     const update = () => {
       ticking = false;
       const probe = window.innerHeight * 0.4;
-      let active = null;
+      let section = null;
       entries.forEach((entry) => {
         const rect = entry.target.getBoundingClientRect();
-        if (rect.top <= probe && rect.bottom > probe) active = entry.link;
+        if (rect.top <= probe && rect.bottom > probe) section = entry.target;
       });
-      if (!active && homeLink && window.scrollY < window.innerHeight * 0.6) active = homeLink;
-      links.forEach((link) => link.classList.toggle('is-active', link === active));
+      const atTop = !section && window.scrollY < window.innerHeight * 0.6;
+      links.forEach((link) => link.classList.remove('is-active'));
+      if (section) entries.forEach((entry) => { if (entry.target === section) entry.link.classList.add('is-active'); });
+      else if (atTop) homeLinks.forEach((link) => link.classList.add('is-active'));
     };
     const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
 
@@ -99,11 +102,14 @@
   }
 
   /* =====================================================================
-     HEADER (sólido ao rolar) + MENU MOBILE
+     HEADER (sólido ao rolar) + MENU MOBILE (banner central)
+     O menu mobile é um diálogo modal centralizado: overlay desfocado +
+     banner com a logo e os mesmos links do header. O header desktop não
+     participa deste fluxo (o banner só existe em telas <= 768px).
      ===================================================================== */
   function initHeader() {
     const header = document.getElementById('header');
-    const nav = document.getElementById('nav');
+    const menu = document.getElementById('mobileMenu');
     const toggle = document.querySelector('.nav-toggle');
     if (!header) return;
 
@@ -111,30 +117,73 @@
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 
-    if (!nav || !toggle) return;
+    if (!menu || !toggle) return;
 
-    const setOpen = (open) => {
-      nav.classList.toggle('is-open', open);
+    const panel = menu.querySelector('.menu__panel');
+    const overlay = menu.querySelector('.menu__overlay');
+    const links = Array.from(menu.querySelectorAll('.menu__link'));
+    const desktopMq = window.matchMedia('(min-width: 769px)');
+
+    const isOpen = () => menu.classList.contains('is-open');
+
+    /* Elementos focáveis dentro do banner (base do focus trap) */
+    const focusables = () => Array.from(
+      panel.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')
+    ).filter((el) => el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+
+    const setOpen = (open, restoreFocus) => {
+      if (open === isOpen()) return;
+      menu.classList.toggle('is-open', open);
+      document.body.classList.toggle('menu-open', open);
       toggle.setAttribute('aria-expanded', String(open));
       toggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+
+      if (open) {
+        // Foco no primeiro link assim que o banner começa a aparecer
+        const first = focusables()[0];
+        if (first) first.focus({ preventScroll: true });
+      } else if (restoreFocus !== false && panel.contains(document.activeElement)) {
+        toggle.focus();
+      }
     };
 
-    toggle.addEventListener('click', () => setOpen(!nav.classList.contains('is-open')));
+    const close = (restoreFocus) => setOpen(false, restoreFocus);
 
-    nav.querySelectorAll('.nav__link').forEach((link) => {
-      link.addEventListener('click', () => setOpen(false));
-    });
+    // 1. botão hambúrguer
+    toggle.addEventListener('click', () => setOpen(!isOpen()));
+
+    // 2. clique no overlay
+    overlay.addEventListener('click', () => close());
+
+    // 3. clique em qualquer link (o scroll é liberado antes da navegação)
+    links.forEach((link) => link.addEventListener('click', () => close(false)));
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && nav.classList.contains('is-open')) { setOpen(false); toggle.focus(); }
+      if (!isOpen()) return;
+
+      // 4. ESC
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+
+      // Focus trap: o Tab circula apenas dentro do banner
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (!panel.contains(active)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); return; }
+      if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
     });
 
-    document.addEventListener('click', (e) => {
-      if (nav.classList.contains('is-open') && !header.contains(e.target)) setOpen(false);
-    });
+    // 5. navegação para outra âncora/página (inclui volta pelo histórico)
+    window.addEventListener('hashchange', () => close(false));
+    window.addEventListener('popstate', () => close(false));
+    window.addEventListener('pageshow', () => close(false));
 
-    // Fecha o menu se a viewport voltar ao desktop
-    window.matchMedia('(min-width: 769px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+    // Volta ao desktop: o banner não existe mais, fecha sem restaurar foco
+    desktopMq.addEventListener('change', (e) => { if (e.matches) close(false); });
   }
 
   /* =====================================================================
@@ -268,6 +317,7 @@
       this.interacting = false;
       this.lockCheck = null;        // função externa que trava o autoplay (transição para a seção 3)
       this.listeners = [];          // observadores do índice ativo
+      this.parkTimer = null;        // devolve o slide que saiu (só no caso de 2 fotos)
 
       this.buildDots();
       this.bindEvents();
@@ -284,8 +334,12 @@
 
     render() {
       this.slides.forEach((slide, i) => {
-        const pos = this.offsetFor(i);
+        let pos = this.offsetFor(i);
         const prev = slide.dataset.pos === undefined ? pos : Number(slide.dataset.pos);
+        // Com 2 fotos não existe um terceiro card para ocupar os dois lados:
+        // quem deixa o centro sai pela esquerda e, terminada a transição,
+        // volta sem animação para a direita (ver parkIdle).
+        if (this.count === 2 && pos !== 0 && prev === 0) pos = -1;
         // Um slide que "dá a volta" (ex.: de -1 para +1) troca de lado sem animar,
         // para não atravessar a área visível.
         const jump = prev !== 0 && pos !== 0 && Math.abs(pos - prev) >= 2;
@@ -305,6 +359,23 @@
         dot.setAttribute('aria-selected', String(active));
         dot.tabIndex = active ? 0 : -1;
       });
+      if (this.count === 2) this.parkIdle();
+    }
+
+    /* Recoloca (sem animar) o slide inativo na posição de "próxima foto",
+       assim que a saída pela esquerda termina — mantém a fatia espiando
+       à direita mesmo com apenas 2 imagens no carrossel. */
+    parkIdle() {
+      clearTimeout(this.parkTimer);
+      this.parkTimer = setTimeout(() => {
+        this.slides.forEach((slide, i) => {
+          if (i === this.index || slide.dataset.pos === '1') return;
+          slide.classList.add('is-jump');
+          slide.dataset.pos = '1';
+          void slide.offsetWidth;
+          slide.classList.remove('is-jump');
+        });
+      }, 760);
     }
 
     goTo(i) {
