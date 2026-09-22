@@ -78,7 +78,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 
 /* =====================================================================
-   ENTRADA DE PÁGINA (index ↔ atendimento)
+   ENTRADA E SAÍDA DE PÁGINA (index ↔ atendimento)
    ===================================================================== */
 .page-main {
   opacity: 0;
@@ -86,6 +86,38 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
 }
 .is-page-ready .page-main { opacity: 1; transform: none; }
+
+/* saída: o conteúdo recua um pouco antes de a navegação acontecer */
+.is-page-leaving .page-main,
+.is-page-leaving .header,
+.is-page-leaving .wa-float {
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 280ms ease, transform 280ms var(--ease-out);
+}
+.is-page-leaving { cursor: progress; }
+
+/* =====================================================================
+   INDICADOR DE PROGRESSO DE LEITURA (linha de 2px no topo)
+   ===================================================================== */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  width: 100%;
+  height: 2px;
+  background: var(--caramel);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.is-page-ready .scroll-progress { opacity: 0.85; }
+/* fora do caminho enquanto o banner do menu mobile está aberto */
+body.menu-open .scroll-progress,
+.is-page-leaving .scroll-progress { opacity: 0; }
 
 /* Seções ainda não construídas em atendimento.html */
 .upcoming:empty { display: block; }
@@ -868,6 +900,53 @@ body.menu-open { overflow: hidden; }
 .is-visible .reveal--right,
 .is-visible .reveal--up { filter: none; }
 
+/* ---- linhas decorativas das labels: desenhadas da esquerda para a direita ----
+   O traço acompanha a label (herda o --d dela) e entra logo depois do texto. */
+.about__label-line,
+.services__label-line,
+.who__label-line,
+.how__label-line,
+.why__label-line,
+.commit__label-line,
+.faq__label-line,
+.contact__label-line {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 900ms var(--ease-out) calc(var(--d, 0ms) + 260ms);
+}
+.is-visible .about__label-line,
+.is-visible .services__label-line,
+.is-visible .who__label-line,
+.is-visible .how__label-line,
+.is-visible .why__label-line,
+.is-visible .commit__label-line,
+.is-visible .faq__label-line,
+.is-visible .contact__label-line { transform: scaleX(1); }
+
+/* ---- reveal editorial das fotografias principais ----
+   Uma cortina cor de linho cobre a foto e desliza para a direita enquanto a
+   imagem relaxa de scale(1.04) para 1. Usado só nas fotos que sustentam a
+   seção — nunca nos carrosséis, que já têm movimento próprio. */
+.img-reveal {
+  position: relative;
+  overflow: hidden;
+}
+.img-reveal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--linen);
+  transform: translateX(0);
+  transition: transform 1100ms var(--ease-out) var(--wipe-d, 300ms);
+}
+.img-reveal img {
+  transform: scale(1.04);
+  transition: transform 1300ms var(--ease-out) var(--wipe-d, 300ms);
+}
+.is-visible .img-reveal::after { transform: translateX(101%); }
+.is-visible .img-reveal img { transform: scale(1); }
+
 /* O botão da seção herda hover/transições depois que revelado */
 .btn--about.reveal {
   transition:
@@ -952,6 +1031,9 @@ body.menu-open { overflow: hidden; }
 }
 /* Enquanto o "traveler" está em cena, a foto real fica invisível (mas mantém o layout) */
 .services__photo.is-hidden img { opacity: 0; transition: none; }
+/* Passagem de bastão: a foto reaparece exatamente onde o clone estava,
+   sem o fade de 400ms — é o que evita a sensação de piscada na chegada. */
+.services__photo.is-handoff img { transition: none; }
 
 /* ---- coluna de conteúdo ---- */
 .services__content { max-width: 720px; }
@@ -1059,8 +1141,8 @@ body.menu-open { overflow: hidden; }
 }
 
 /* Entrada própria: só quando o carrossel entra no viewport (não junto com a seção) */
-.reveal--rise { --reveal-dur: 1000ms; filter: none; transform: translateY(35px) scale(0.97); }
-.services__gallery:not(.is-visible) .reveal--rise { opacity: 0; transform: translateY(35px) scale(0.97); }
+.reveal--rise { --reveal-dur: 1050ms; filter: none; transform: translateY(30px) scale(0.98); }
+.services__gallery:not(.is-visible) .reveal--rise { opacity: 0; transform: translateY(30px) scale(0.98); }
 
 .carousel.carousel--patients {
   --wc: clamp(250px, 26vw, 400px);          /* largura da imagem principal */
@@ -1245,7 +1327,10 @@ body.menu-open { overflow: hidden; }
   line-height: 1.45;
   color: var(--ink-soft);
 }
-.who__item > span:last-child { max-width: 30ch; }
+.who__item > span:last-child {
+  max-width: 30ch;
+  transition: transform 300ms var(--ease-out), color 300ms ease;
+}
 
 .who__check {
   flex: 0 0 auto;
@@ -1257,8 +1342,26 @@ body.menu-open { overflow: hidden; }
   background: var(--caramel);
   color: #FBF7F1;
   box-shadow: 0 8px 18px -10px rgba(120, 90, 60, 0.5);
+  /* o check "brota" logo depois do item entrar (herda o --d do .who__item) */
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    transform 700ms var(--ease-out) calc(var(--d, 0ms) + 140ms),
+    opacity 500ms ease calc(var(--d, 0ms) + 140ms),
+    background-color 300ms ease;
 }
 .who__check svg { width: 52%; height: 52%; }
+.who.is-visible .who__check { opacity: 1; transform: scale(1); }
+/* revelado: o hover responde sem herdar o delay de entrada */
+.who.is-visible.is-settled .who__check {
+  transition: transform 300ms var(--ease-out), background-color 300ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .who.is-visible.is-settled .who__item:hover .who__check { transform: scale(1.06); }
+  .who__item:hover > span:last-child { transform: translateX(3px); color: var(--ink); }
+  .who__photo:hover img { transform: scale(1.015); }
+}
 
 /* ---- composição da direita: foto + card sobreposto ---- */
 .who__visual {
@@ -1271,6 +1374,8 @@ body.menu-open { overflow: hidden; }
 
 .who__photo {
   position: relative;
+  /* deriva discreta no scroll (escrita pelo parallax em js/main.js) */
+  transform: translate3d(0, var(--parallax-y, 0px), 0);
   width: 64.5%;
   margin: 0 0 0 auto;
   aspect-ratio: 5 / 7;
@@ -1285,6 +1390,14 @@ body.menu-open { overflow: hidden; }
   height: 100%;
   object-fit: cover;
   object-position: 50% 50%;
+}
+/* depois do reveal editorial, a imagem passa a responder ao hover */
+.is-visible.is-settled .img-reveal img { transition: transform 600ms var(--ease-out); }
+
+/* flutuação quase imperceptível do card (ligada pelo observer, só no desktop) */
+@keyframes card-float {
+  0%, 100% { transform: translateY(-50%); }
+  50%      { transform: translateY(calc(-50% - 4px)); }
 }
 
 .who__card {
@@ -1326,6 +1439,11 @@ body.menu-open { overflow: hidden; }
   height: 1px;
   margin: clamp(20px, 2vw, 30px) auto 0;
   background: var(--caramel-deep);
+}
+
+/* o observer liga a flutuação só enquanto a seção está na tela */
+@media (min-width: 901px) {
+  .who__card.is-floating { animation: card-float 6s ease-in-out infinite; }
 }
 
 .who__card-script {
@@ -1988,7 +2106,14 @@ body.menu-open { overflow: hidden; }
   overflow: hidden;
   isolation: isolate;
 }
-/* grande curva bege na extremidade direita + brilho suave na base esquerda */
+/* grande curva bege na extremidade direita + brilho suave na base esquerda.
+   As duas formas derivam em sentidos opostos conforme o scroll (js/main.js),
+   o suficiente para dar profundidade sem que o movimento seja percebido. */
+.faq::before,
+.contact::before { transform: translate3d(0, var(--shape-a, 0px), 0); }
+.faq::after,
+.contact::after { transform: translate3d(0, var(--shape-b, 0px), 0); }
+
 .faq::before {
   content: "";
   position: absolute;
@@ -2911,6 +3036,33 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
 }
 
 /* =====================================================================
+   MOBILE: MENOS MOVIMENTO, MESMO RITMO
+   Deslocamentos laterais, blur e escala saem caro em telas pequenas.
+   Aqui tudo converge para opacidade + translateY, mantendo o stagger.
+   ===================================================================== */
+@media (max-width: 768px) {
+  .reveal { filter: none; }
+  .reveal--left,
+  .reveal--label,
+  .reveal--label-sm { transform: translateY(18px); }
+  .reveal--right,
+  .reveal--from-right,
+  .reveal--card,
+  .reveal--commit { transform: translateY(22px) scale(0.99); }
+  .reveal--up { transform: translateY(24px) scale(0.99); }
+  .reveal--rise { transform: translateY(24px) scale(0.99); }
+  .services__gallery:not(.is-visible) .reveal--rise { transform: translateY(24px) scale(0.99); }
+
+  /* cortina mais curta e sem exagero de escala */
+  .img-reveal::after { transition-duration: 900ms; }
+  .img-reveal img { transform: scale(1.025); transition-duration: 1100ms; }
+
+  /* nada de parallax nem flutuação */
+  .who__photo { transform: none; }
+  .who__card.is-floating { animation: none; }
+}
+
+/* =====================================================================
    REDUCED MOTION
    ===================================================================== */
 @media (prefers-reduced-motion: reduce) {
@@ -2967,6 +3119,37 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
   .carousel__slide { transition: opacity 250ms ease; }
   .carousel__slide img { transition: none; }
   .btn, .btn__arrow, .carousel__btn, .carousel__dot, .nav__link::after, .header { transition-duration: 120ms; }
+
+  /* refinamentos de movimento desta rodada */
+  .about__label-line, .services__label-line, .who__label-line,
+  .how__label-line, .why__label-line, .commit__label-line,
+  .faq__label-line, .contact__label-line {
+    transform: scaleX(1) !important;
+    transition: none !important;
+  }
+  .img-reveal::after { display: none; }
+  .img-reveal img {
+    transform: none !important;
+    transition: none !important;
+  }
+  .who__check {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .who__item > span:last-child { transform: none !important; }
+  .who__card.is-floating { animation: none !important; }
+  .who__photo { transform: none !important; }
+  .faq::before, .faq::after,
+  .contact::before, .contact::after { transform: none !important; }
+  .is-page-leaving .page-main,
+  .is-page-leaving .header,
+  .is-page-leaving .wa-float {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .scroll-progress { transition: none; }
 
   /* menu mobile: sem blur, sem escala e sem deslocamentos — só opacidade */
   .menu { transition: visibility 0s linear 200ms; }

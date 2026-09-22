@@ -269,6 +269,146 @@
   }
 
   /* =====================================================================
+     PROGRESSO DE LEITURA
+     Linha de 2px no topo que cresce com o scroll. Só escreve transform,
+     e apenas uma vez por frame.
+     ===================================================================== */
+  function initScrollProgress() {
+    const bar = document.getElementById('scrollProgress');
+    if (!bar) return;
+
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      const p = max > 4 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      bar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+
+  /* =====================================================================
+     TRANSIÇÃO ENTRE PÁGINAS (index ↔ atendimento)
+     O conteúdo recua e some em 280ms antes de a navegação acontecer.
+     Links externos (WhatsApp, Instagram), target="_blank", downloads e
+     âncoras da própria página seguem o comportamento normal do navegador.
+     ===================================================================== */
+  function initPageTransition() {
+    if (!document.querySelector('.page-main')) return;
+
+    const DURATION = 280;
+    const currentFile = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    let leaving = false;
+
+    document.addEventListener('click', (e) => {
+      if (leaving || e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (prefersReducedMotion.matches) return;
+
+      const link = e.target.closest && e.target.closest('a[href]');
+      if (!link || link.hasAttribute('download')) return;
+      if (link.target && link.target !== '_self') return;              // abre em nova aba: não atrasa
+
+      const href = link.getAttribute('href') || '';
+      if (/^(mailto:|tel:|javascript:|#)/i.test(href)) return;
+
+      let url;
+      try { url = new URL(href, location.href); } catch (err) { return; }
+      if (url.origin !== location.origin) return;                      // WhatsApp, Instagram, etc.
+
+      const file = (url.pathname.split('/').pop() || 'index.html').toLowerCase();
+      if (file === currentFile) return;                                // âncora interna: scroll normal
+
+      e.preventDefault();
+      leaving = true;
+      document.documentElement.classList.add('is-page-leaving');
+      setTimeout(() => { location.href = url.href; }, DURATION);
+    });
+
+    // Voltar pelo histórico (inclusive bfcache) devolve a página visível
+    window.addEventListener('pageshow', () => {
+      leaving = false;
+      document.documentElement.classList.remove('is-page-leaving');
+    });
+  }
+
+  /* =====================================================================
+     PARALLAX SUAVE (foto da seção 4 + formas orgânicas dos fundos)
+     Um único listener de scroll alimenta todos os alvos dentro de um rAF.
+     Amplitude máxima de 14px — profundidade sem que o movimento apareça.
+     Desktop apenas.
+     ===================================================================== */
+  function initSoftParallax() {
+    const targets = [];
+
+    const photo = document.querySelector('.who__photo');
+    if (photo) targets.push({ el: photo, props: [['--parallax-y', 14]] });
+
+    ['.faq', '.contact'].forEach((selector) => {
+      const section = document.querySelector(selector);
+      // as duas formas derivam em sentidos opostos, o que cria a sensação de camadas
+      if (section) targets.push({ el: section, props: [['--shape-a', -12], ['--shape-b', 9]] });
+    });
+
+    if (!targets.length) return;
+
+    let ticking = false;
+    let enabled = false;
+
+    const update = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+      targets.forEach((target) => {
+        const rect = target.el.getBoundingClientRect();
+        if (rect.bottom < -200 || rect.top > vh + 200) return;         // fora de cena: nada a fazer
+        const p = Math.min(1, Math.max(0, (vh - rect.top) / (vh + rect.height)));
+        const q = (0.5 - p) * 2;                                       // +1 (entrando) → -1 (saindo)
+        target.props.forEach((prop) => {
+          target.el.style.setProperty(prop[0], (q * prop[1]).toFixed(2) + 'px');
+        });
+      });
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+
+    const clear = () => targets.forEach((target) => {
+      target.props.forEach((prop) => target.el.style.removeProperty(prop[0]));
+    });
+
+    const evaluate = () => {
+      const on = !prefersReducedMotion.matches && !isMobileViewport();
+      if (on && !enabled) { enabled = true; window.addEventListener('scroll', onScroll, { passive: true }); update(); }
+      if (!on && enabled) { enabled = false; window.removeEventListener('scroll', onScroll); clear(); }
+    };
+
+    evaluate();
+    window.addEventListener('resize', () => { if (enabled) onScroll(); });
+    prefersReducedMotion.addEventListener('change', evaluate);
+    window.matchMedia('(max-width: 768px)').addEventListener('change', evaluate);
+  }
+
+  /* =====================================================================
+     FLUTUAÇÃO DO CARD DA SEÇÃO 4
+     Movimento de 4px em 6s, ligado só enquanto a seção está na tela para
+     não manter uma animação rodando no fundo da página.
+     ===================================================================== */
+  function initCardFloat() {
+    const card = document.querySelector('.who__card');
+    const section = document.getElementById('indicado');
+    if (!card || !section || prefersReducedMotion.matches || !('IntersectionObserver' in window)) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => card.classList.toggle('is-floating', entry.isIntersecting));
+    }, { threshold: 0 });
+
+    observer.observe(section);
+  }
+
+  /* =====================================================================
      REVEAL DA SEÇÃO SOBRE MIM (IntersectionObserver, executa uma vez)
      ===================================================================== */
   function initReveal() {
@@ -577,8 +717,12 @@
       state = arrived ? 'done' : 'idle';
       if (hiddenSlide) hiddenSlide.classList.remove('is-traveling');
       hiddenSlide = null;
+      // A foto real reaparece sem o fade de 400ms: o clone sai e ela já está
+      // no lugar, no mesmo frame — é o que evita a piscada na chegada.
+      slot.classList.add('is-handoff');
       slot.classList.remove('is-hidden');
       traveler.classList.remove('is-active');
+      requestAnimationFrame(() => slot.classList.remove('is-handoff'));
     };
 
     const teardown = () => {
@@ -681,7 +825,11 @@
   initActiveNav();
   initHeroEntrance();
   initParallax();
+  initSoftParallax();
+  initScrollProgress();
+  initPageTransition();
   initReveal();
+  initCardFloat();
   const carousel = initCarousel();
   initServicesTransition(carousel);
   initPatientsCarousel();
