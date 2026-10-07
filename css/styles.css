@@ -924,28 +924,52 @@ body.menu-open { overflow: hidden; }
 .is-visible .contact__label-line { transform: scaleX(1); }
 
 /* ---- reveal editorial das fotografias principais ----
-   Uma cortina cor de linho cobre a foto e desliza para a direita enquanto a
-   imagem relaxa de scale(1.04) para 1. Usado só nas fotos que sustentam a
-   seção — nunca nos carrosséis, que já têm movimento próprio. */
+   Uma cortina bege cobre a foto e desliza para fora enquanto a imagem relaxa
+   de scale(1.04) para 1. Cada foto é observada individualmente (js/main.js,
+   initImageReveal: 20% visível, uma única vez) e recebe .is-revealed.
+     --reveal-color  cor da cortina (padrão: linho)
+     --wipe-d        atraso antes de a cortina sair
+   .img-reveal         → figura com uma única foto
+   .img-reveal-slides  → carrossel: a cortina fica em cada slide (só CSS,
+                         a mecânica do carrossel não é tocada) */
 .img-reveal {
   position: relative;
   overflow: hidden;
 }
-.img-reveal::after {
+.img-reveal::after,
+.img-reveal-slides .carousel__slide::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: var(--linen);
+  pointer-events: none;
+  background: var(--reveal-color, var(--linen));
   transform: translateX(0);
-  transition: transform 1100ms var(--ease-out) var(--wipe-d, 300ms);
+  transition: transform 1200ms var(--ease-out) var(--wipe-d, 200ms);
 }
 .img-reveal img {
   transform: scale(1.04);
-  transition: transform 1300ms var(--ease-out) var(--wipe-d, 300ms);
+  transition: transform 1350ms var(--ease-out) var(--wipe-d, 200ms);
 }
-.is-visible .img-reveal::after { transform: translateX(101%); }
-.is-visible .img-reveal img { transform: scale(1); }
+.img-reveal.is-revealed::after,
+.img-reveal-slides.is-revealed .carousel__slide::after { transform: translateX(101%); }
+.img-reveal.is-revealed img { transform: scale(1); }
+
+/* carrosséis: a escala usa a propriedade "scale" para não disputar o
+   transform do hover; os cards laterais revelam logo depois do central */
+.img-reveal-slides .carousel__slide img {
+  scale: 1.04;
+  transition: transform 600ms var(--ease-out), scale 1350ms var(--ease-out) var(--wipe-d, 200ms);
+}
+.img-reveal-slides.is-revealed .carousel__slide img { scale: 1; }
+.img-reveal-slides .carousel__slide:not([data-pos="0"])::after { transition-delay: calc(var(--wipe-d, 200ms) + 160ms); }
+.img-reveal-slides .carousel__slide:not([data-pos="0"]) img { transition-delay: 0ms, calc(var(--wipe-d, 200ms) + 160ms); }
+
+/* terminado o reveal, a cortina sai de cena e a foto volta a responder ao hover sem atraso */
+.img-reveal.is-reveal-done::after,
+.img-reveal-slides.is-reveal-done .carousel__slide::after { display: none; }
+.img-reveal.is-reveal-done img { transition: transform 600ms var(--ease-out); }
+.img-reveal-slides.is-reveal-done .carousel__slide img { transition: transform 600ms var(--ease-out); }
 
 /* O botão da seção herda hover/transições depois que revelado */
 .btn--about.reveal {
@@ -1175,6 +1199,10 @@ body.menu-open { overflow: hidden; }
   box-shadow: 0 18px 40px -22px rgba(70, 50, 35, 0.3);
 }
 .carousel.carousel--patients .carousel__slide img { transition: transform 400ms var(--ease-out); }
+.carousel.carousel--patients.img-reveal-slides .carousel__slide img {
+  transition: transform 400ms var(--ease-out), scale 1350ms var(--ease-out) var(--wipe-d, 200ms);
+}
+.carousel.carousel--patients.img-reveal-slides.is-reveal-done .carousel__slide img { transition: transform 400ms var(--ease-out); }
 .carousel.carousel--patients .carousel__slide[data-pos="0"]:hover img { transform: scale(1.015); }
 
 /* Setas: circulares, fundo bege claro, borda sutil */
@@ -1391,8 +1419,6 @@ body.menu-open { overflow: hidden; }
   object-fit: cover;
   object-position: 50% 50%;
 }
-/* depois do reveal editorial, a imagem passa a responder ao hover */
-.is-visible.is-settled .img-reveal img { transition: transform 600ms var(--ease-out); }
 
 /* flutuação quase imperceptível do card (ligada pelo observer, só no desktop) */
 @keyframes card-float {
@@ -1844,6 +1870,8 @@ body.menu-open { overflow: hidden; }
   position: relative;
   padding-block: clamp(96px, 14vh, 160px);
   background:
+    /* começa no creme exato em que "Como funciona" termina (sem emenda) */
+    linear-gradient(180deg, #F5F1EA 0, rgba(245, 241, 234, 0) clamp(120px, 16vh, 180px)),
     radial-gradient(60% 50% at 88% 18%, rgba(217, 209, 196, 0.45) 0%, rgba(217, 209, 196, 0) 70%),
     radial-gradient(50% 40% at 6% 90%, rgba(214, 194, 170, 0.28) 0%, rgba(214, 194, 170, 0) 70%),
     var(--cream);
@@ -2100,12 +2128,27 @@ body.menu-open { overflow: hidden; }
    PERGUNTAS FREQUENTES (seção 7)
    ===================================================================== */
 .faq {
+  /* avança --bleed sobre cada seção vizinha (margem negativa + borda
+     transparente: a altura do layout não muda) e o fundo e a grande curva
+     bege se dissolvem nessas faixas — sem corte reto no topo nem na base */
+  --bleed: 64px;
   position: relative;
+  z-index: 1;                                /* passa por cima do fim de "Por que escolher" e do início do contato */
+  margin-block: calc(-1 * var(--bleed));
   padding-block: clamp(110px, 16vh, 180px);
-  background: #F7F4EE;
-  overflow: hidden;
+  border-block: var(--bleed) solid transparent;
+  background: linear-gradient(180deg,
+    rgba(247, 244, 238, 0) 0,
+    #F7F4EE var(--bleed),
+    #F7F4EE calc(100% - var(--bleed)),
+    rgba(247, 244, 238, 0) 100%);
+  background-origin: border-box;             /* o degradê cobre também as faixas da borda */
+  overflow-x: clip;                          /* sem scroll horizontal pela curva */
+  clip-path: inset(0);                       /* corta na borda (--bleed além do conteúdo) */
   isolation: isolate;
+  pointer-events: none;                      /* as faixas sobrepostas não bloqueiam a seção vizinha… */
 }
+.faq__inner { pointer-events: auto; }        /* …e o conteúdo do FAQ continua clicável */
 /* grande curva bege na extremidade direita + brilho suave na base esquerda.
    As duas formas derivam em sentidos opostos conforme o scroll (js/main.js),
    o suficiente para dar profundidade sem que o movimento seja percebido. */
@@ -2929,6 +2972,332 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
 }
 
 /* =====================================================================
+   TRANSIÇÕES ENTRE SEÇÕES
+   Nada de separadores: onde um fundo terminava numa linha reta, as duas
+   seções se dissolvem no mesmo tom creme. As faixas ficam dentro do
+   padding das seções, atrás do conteúdo, e não recebem cliques.
+   ===================================================================== */
+.hero::after,
+.about::before,
+.services::after,
+.who::before,
+.how::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--seam-h, clamp(56px, 9vh, 100px));
+  pointer-events: none;
+}
+
+/* Hero → Sobre mim: o piso de mármore se dissolve no creme do início da seção 2 */
+.hero::after {
+  --seam-h: clamp(90px, 15vh, 160px);
+  bottom: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(var(--cream-rgb), 0) 0%, rgba(var(--cream-rgb), 0.55) 55%, rgba(var(--cream-rgb), 0.94) 100%);
+}
+.about::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(var(--cream-rgb), 0.94) 0%, rgba(var(--cream-rgb), 0) 100%);
+}
+
+/* Serviços → Para quem é indicado: as curvas do fundo, cortadas na divisa, somem no creme */
+.services::after,
+.who::before { --seam-h: clamp(80px, 12vh, 140px); }
+.services::after {
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(var(--cream-rgb), 0) 0%, rgba(var(--cream-rgb), 0.6) 55%, rgba(var(--cream-rgb), 0.95) 100%);
+}
+.who::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(var(--cream-rgb), 0.95) 0%, rgba(var(--cream-rgb), 0.6) 45%, rgba(var(--cream-rgb), 0) 100%);
+}
+
+/* Como funciona → Por que escolher: a foto de fundo termina no creme exato da seção seguinte */
+.how::after {
+  --seam-h: clamp(72px, 12vh, 130px);
+  bottom: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(245, 241, 234, 0) 0%, #F5F1EA 100%);
+}
+
+/* a curva bege e o brilho do FAQ se dissolvem nas faixas sobrepostas */
+.faq::before {
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent 9%, #000 24%, #000 76%, transparent 91%);
+  mask-image: linear-gradient(180deg, transparent 9%, #000 24%, #000 76%, transparent 91%);
+}
+.faq::after {
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 57%);
+  mask-image: linear-gradient(180deg, #000 30%, transparent 57%);
+}
+
+@media (max-width: 768px) {
+  .hero::after, .about::before, .services::after, .who::before { --seam-h: 52px; }
+  .how::after { --seam-h: 64px; }
+  .faq { --bleed: 48px; }
+}
+
+/* =====================================================================
+   WHATSAPP INTELIGENTE — MODAL "COMO POSSO AJUDAR?"
+   Criado uma única vez por js/main.js (initWhatsAppModal) e aberto por
+   qualquer elemento com [data-wa-modal].
+   ===================================================================== */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* trava o scroll da página sem deslocar o layout pela barra de rolagem */
+html.wa-lock { scrollbar-gutter: stable; }
+html.wa-lock body { overflow: hidden; }
+
+.wa-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.wa-modal[hidden] { display: none; }
+
+.wa-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(40, 34, 28, 0.28);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+.wa-modal__card {
+  position: relative;
+  width: min(90vw, 470px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(28px, 3vw, 36px) clamp(24px, 3vw, 34px) clamp(24px, 2.6vw, 30px);
+  border-radius: 28px;
+  background: var(--ivory);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 40px 80px -38px rgba(60, 42, 28, 0.45), 0 10px 26px -18px rgba(60, 42, 28, 0.25);
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  filter: blur(4px);
+  transition:
+    opacity 450ms var(--ease-out),
+    transform 450ms var(--ease-out),
+    filter 450ms var(--ease-out);
+}
+.wa-modal__card:focus { outline: none; }
+
+.wa-modal.is-open .wa-modal__overlay { opacity: 1; }
+.wa-modal.is-open .wa-modal__card { opacity: 1; transform: none; filter: blur(0); }
+
+.wa-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 117, 99, 0.3);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background-color 300ms ease, border-color 300ms ease;
+}
+.wa-modal__close svg { width: 14px; height: 14px; }
+.wa-modal__close:hover,
+.wa-modal__close:focus-visible {
+  background: rgba(207, 176, 147, 0.22);
+  border-color: rgba(139, 117, 99, 0.5);
+}
+.wa-modal__close:focus-visible { outline: 2px solid var(--caramel-deep); outline-offset: 2px; }
+
+.wa-modal__line {
+  display: block;
+  width: 44px;
+  height: 1px;
+  margin-bottom: 22px;
+  background: var(--ink-line);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 800ms var(--ease-out) 160ms;
+}
+.wa-modal.is-open .wa-modal__line { transform: scaleX(1); }
+
+.wa-modal__title {
+  padding-right: 48px;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(1.9rem, 2.4vw, 2.3rem);
+  line-height: 1.05;
+  color: var(--ink);
+}
+.wa-modal__text {
+  margin-top: 12px;
+  max-width: 34ch;
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.wa-modal__list {
+  margin-top: clamp(22px, 2.4vw, 28px);
+  border-top: 1px solid rgba(139, 117, 99, 0.2);
+}
+.wa-modal__item {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+  transition-delay: calc(120ms + var(--i, 0) * 45ms);
+}
+.wa-modal.is-open .wa-modal__item { opacity: 1; transform: none; }
+
+.wa-option {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 4px;
+  border-bottom: 1px solid rgba(139, 117, 99, 0.2);
+  color: var(--ink);
+  transition: color 300ms ease, border-color 300ms ease;
+}
+.wa-option__num {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--caramel-deep);
+}
+.wa-option__label {
+  font-family: var(--font-serif);
+  font-size: 1.18rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.wa-option__arrow {
+  width: 22px;
+  height: 12px;
+  color: var(--ink-muted);
+  transition: transform 300ms var(--ease-out), color 300ms ease;
+}
+.wa-option:focus-visible {
+  outline: 2px solid var(--caramel-deep);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+@media (hover: hover) {
+  .wa-option:hover { color: var(--caramel-deeper); border-bottom-color: rgba(139, 117, 99, 0.45); }
+  .wa-option:hover .wa-option__arrow { transform: translateX(5px); color: var(--caramel-deeper); }
+}
+.wa-option:focus-visible .wa-option__arrow { transform: translateX(5px); color: var(--caramel-deeper); }
+
+@media (max-width: 480px) {
+  .wa-modal__card { border-radius: 26px; }
+  .wa-modal__title { font-size: 1.85rem; }
+  .wa-option { grid-template-columns: 30px minmax(0, 1fr) auto; padding-block: 14px; }
+  .wa-option__label { font-size: 1.08rem; }
+}
+
+/* =====================================================================
+   CTA FIXA NO MOBILE
+   Pill no rodapé da tela (≤ 768px). Surge depois de ~320px de scroll e
+   sai de cena na seção de contato, no rodapé e no encerramento do index.
+   Abre o mesmo modal de WhatsApp.
+   ===================================================================== */
+.cta-bar { display: none; }
+
+@media (max-width: 768px) {
+  /* a pill substitui o botão redondo no mobile */
+  .wa-float { display: none; }
+
+  .cta-bar {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 48;                              /* acima do conteúdo, abaixo do menu (60) e do modal (100) */
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 56px;
+    padding: 8px 24px 8px 9px;
+    border-radius: 999px;
+    color: var(--ink);
+    background: var(--caramel);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 16px 34px -18px rgba(90, 65, 45, 0.55);
+    -webkit-tap-highlight-color: transparent;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition:
+      opacity 400ms var(--ease-out),
+      transform 400ms var(--ease-out),
+      visibility 0s linear 400ms,
+      background-color 300ms ease;
+  }
+  .cta-bar.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 400ms var(--ease-out),
+      transform 400ms var(--ease-out),
+      visibility 0s,
+      background-color 300ms ease;
+  }
+  body.menu-open .cta-bar,
+  .is-page-leaving .cta-bar { opacity: 0; visibility: hidden; transform: translateY(20px); }
+
+  .cta-bar__icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: #FBF7F1;
+    background: var(--caramel-deep);
+  }
+  .cta-bar__icon svg { width: 20px; height: 20px; }
+  .cta-bar__label {
+    flex: 1 1 auto;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .cta-bar__arrow {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 12px;
+    transition: transform 300ms var(--ease-out);
+  }
+  .cta-bar:active { background: var(--caramel-hover); }
+  .cta-bar:active .cta-bar__arrow,
+  .cta-bar:focus-visible .cta-bar__arrow { transform: translateX(5px); }
+  .cta-bar:focus-visible { outline: 2px solid var(--caramel-deeper); outline-offset: 3px; }
+}
+
+/* =====================================================================
    RESPONSIVO
    ===================================================================== */
 
@@ -3054,8 +3423,10 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
   .services__gallery:not(.is-visible) .reveal--rise { transform: translateY(24px) scale(0.99); }
 
   /* cortina mais curta e sem exagero de escala */
-  .img-reveal::after { transition-duration: 900ms; }
+  .img-reveal::after,
+  .img-reveal-slides .carousel__slide::after { transition-duration: 900ms; }
   .img-reveal img { transform: scale(1.025); transition-duration: 1100ms; }
+  .img-reveal-slides .carousel__slide img { scale: 1.025; }
 
   /* nada de parallax nem flutuação */
   .who__photo { transform: none; }
@@ -3127,11 +3498,13 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
     transform: scaleX(1) !important;
     transition: none !important;
   }
-  .img-reveal::after { display: none; }
+  .img-reveal::after,
+  .img-reveal-slides .carousel__slide::after { display: none; }
   .img-reveal img {
     transform: none !important;
     transition: none !important;
   }
+  .img-reveal-slides .carousel__slide img { scale: 1 !important; }
   .who__check {
     opacity: 1 !important;
     transform: none !important;
@@ -3150,6 +3523,16 @@ a.contact__value:focus-visible { color: var(--caramel-deeper); }
     transition: none !important;
   }
   .scroll-progress { transition: none; }
+
+  /* modal e CTA mobile: continuam funcionando, só com opacidade */
+  .wa-modal__overlay { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(40, 34, 28, 0.4); transition-duration: 160ms; }
+  .wa-modal__card, .wa-modal__item, .wa-modal__line {
+    transform: none !important;
+    filter: none !important;
+    transition: opacity 160ms linear !important;
+  }
+  .wa-option__arrow, .cta-bar__arrow { transition: none; }
+  .cta-bar, .cta-bar.is-visible { transform: none !important; transition: opacity 160ms linear, visibility 0s !important; }
 
   /* menu mobile: sem blur, sem escala e sem deslocamentos — só opacidade */
   .menu { transition: visibility 0s linear 200ms; }

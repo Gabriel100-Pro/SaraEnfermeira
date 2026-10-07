@@ -438,6 +438,202 @@
   }
 
   /* =====================================================================
+     REVEAL EDITORIAL DAS FOTOGRAFIAS (.img-reveal / .img-reveal-slides)
+     Cada foto é observada sozinha: com 20% dela na tela a cortina bege
+     desliza para fora. Executa uma vez; depois a cortina sai do DOM visual.
+     ===================================================================== */
+  function initImageReveal() {
+    const items = Array.from(document.querySelectorAll('.img-reveal, .img-reveal-slides'));
+    if (!items.length) return;
+
+    const show = (el) => {
+      el.classList.add('is-revealed');
+      setTimeout(() => el.classList.add('is-reveal-done'), 1900);
+    };
+
+    if (prefersReducedMotion.matches || !('IntersectionObserver' in window)) {
+      items.forEach((el) => el.classList.add('is-revealed', 'is-reveal-done'));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        show(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.2 });
+
+    items.forEach((el) => observer.observe(el));
+  }
+
+  /* =====================================================================
+     WHATSAPP INTELIGENTE
+     Os CTAs principais ([data-wa-modal]) abrem um diálogo "Como posso
+     ajudar?" com 5 atendimentos. Cada opção é um link real para o WhatsApp
+     com a mensagem já preenchida. Sem JavaScript, o href original do CTA
+     continua levando direto ao WhatsApp.
+     ===================================================================== */
+  const WA_NUMBER = '5516992502596';
+  const WA_OPTIONS = [
+    { label: 'Curativos e feridas', message: 'Olá, Sara! Gostaria de saber mais sobre atendimento domiciliar para curativos e cuidados com feridas.' },
+    { label: 'Administração de medicamentos', message: 'Olá, Sara! Gostaria de saber mais sobre atendimento domiciliar para administração de medicamentos.' },
+    { label: 'Acompanhamento domiciliar', message: 'Olá, Sara! Gostaria de saber mais sobre acompanhamento profissional de enfermagem em domicílio.' },
+    { label: 'Orientação para familiares e cuidadores', message: 'Olá, Sara! Gostaria de saber mais sobre orientação para familiares e cuidadores.' },
+    { label: 'Outro atendimento', message: 'Olá, Sara! Gostaria de conversar sobre uma necessidade de assistência domiciliar de enfermagem.' },
+  ];
+  const waLink = (message) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`;
+
+  const ARROW_SVG = '<path d="M0 6h24M19 1l5 5-5 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>';
+  const WA_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 0 0-7.3 12.8L3.5 20.5l4.3-1.1A8.5 8.5 0 1 0 12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.1 8.6c.2-.5.5-.5.8-.5h.5c.2 0 .4.1.5.4l.5 1.3c.1.2 0 .4-.1.6l-.5.6c.6 1.2 1.5 2.1 2.7 2.7l.6-.5c.2-.2.4-.2.6-.1l1.3.5c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.7.4-1.5.3-2.3 0-2.1-.9-3.7-2.4-4.5-4.5-.3-.8-.4-1.6 0-2.3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+
+  function initWhatsAppModal() {
+    if (!document.querySelector('.page-main')) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'wa-modal';
+    modal.id = 'waModal';
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="wa-modal__overlay" data-wa-close></div>
+      <div class="wa-modal__card" role="dialog" aria-modal="true" aria-labelledby="waModalTitle" aria-describedby="waModalText" tabindex="-1">
+        <button class="wa-modal__close" type="button" aria-label="Fechar" data-wa-close>
+          <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1 1 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+        <span class="wa-modal__line" aria-hidden="true"></span>
+        <h2 class="wa-modal__title" id="waModalTitle">Como posso ajudar?</h2>
+        <p class="wa-modal__text" id="waModalText">Selecione o atendimento que mais se aproxima da sua necessidade.</p>
+        <ul class="wa-modal__list">
+          ${WA_OPTIONS.map((opt, i) => `
+          <li class="wa-modal__item" style="--i: ${i}">
+            <a class="wa-option" href="${waLink(opt.message)}" target="_blank" rel="noopener noreferrer">
+              <span class="wa-option__num" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>
+              <span class="wa-option__label">${opt.label}<span class="sr-only"> (abre o WhatsApp em nova aba)</span></span>
+              <svg class="wa-option__arrow" viewBox="0 0 26 12" fill="none" aria-hidden="true">${ARROW_SVG}</svg>
+            </a>
+          </li>`).join('')}
+        </ul>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const card = modal.querySelector('.wa-modal__card');
+    const CLOSE_MS = 460;
+    let opener = null;
+    let closeTimer = null;
+
+    const isOpen = () => modal.classList.contains('is-open');
+    const focusables = () => Array.from(card.querySelectorAll('a[href], button:not([disabled])'));
+
+    const open = (trigger) => {
+      if (isOpen()) return;
+      opener = trigger || null;
+      clearTimeout(closeTimer);
+      modal.hidden = false;
+      document.documentElement.classList.add('wa-lock');
+      void modal.offsetWidth;                       // garante o estado inicial antes da transição
+      modal.classList.add('is-open');
+      card.focus({ preventScroll: true });          // leitor de tela anuncia título + descrição
+    };
+
+    const close = (restoreFocus) => {
+      if (!isOpen()) return;
+      modal.classList.remove('is-open');
+      document.documentElement.classList.remove('wa-lock');
+      closeTimer = setTimeout(() => { modal.hidden = true; }, prefersReducedMotion.matches ? 170 : CLOSE_MS);
+      if (restoreFocus !== false && opener && document.contains(opener)) opener.focus({ preventScroll: true });
+      opener = null;
+    };
+
+    // Qualquer CTA marcado (inclusive os criados depois, como a pill mobile)
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest && e.target.closest('[data-wa-modal]');
+      if (!trigger) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      open(trigger);
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target.closest('[data-wa-close]')) { close(); return; }
+      // escolher uma opção: o link abre o WhatsApp em nova aba e o modal se fecha
+      if (e.target.closest('.wa-option')) close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!isOpen()) return;
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab') return;
+
+      // Focus trap: o Tab circula apenas dentro do card
+      const items = focusables();
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (!card.contains(active) || active === card) { e.preventDefault(); (e.shiftKey ? last : first).focus(); return; }
+      if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    });
+
+    // Voltar pelo histórico (bfcache) nunca deve reabrir a página com o modal aberto
+    window.addEventListener('pageshow', () => close(false));
+
+    // Os CTAs marcados passam a anunciar que abrem um diálogo
+    document.querySelectorAll('[data-wa-modal]').forEach((el) => el.setAttribute('aria-haspopup', 'dialog'));
+  }
+
+  /* =====================================================================
+     CTA FIXA NO MOBILE
+     Pill no rodapé da tela (só aparece ≤ 768px, via CSS). Surge depois de
+     ~320px de scroll e some enquanto contato/rodapé/encerramento estão na
+     tela. Sem listener de scroll: dois IntersectionObservers decidem tudo.
+     ===================================================================== */
+  function initCtaBar() {
+    if (!document.querySelector('.page-main') || !('IntersectionObserver' in window)) return;
+
+    const bar = document.createElement('a');
+    bar.className = 'cta-bar';
+    bar.href = `https://wa.me/${WA_NUMBER}`;
+    bar.target = '_blank';
+    bar.rel = 'noopener noreferrer';
+    bar.setAttribute('data-wa-modal', '');
+    bar.setAttribute('aria-haspopup', 'dialog');
+    bar.innerHTML = `
+      <span class="cta-bar__icon" aria-hidden="true">${WA_ICON_SVG}</span>
+      <span class="cta-bar__label">Falar com Sara</span>
+      <svg class="cta-bar__arrow" viewBox="0 0 26 12" fill="none" aria-hidden="true">${ARROW_SVG}</svg>`;
+    document.body.appendChild(bar);
+
+    // marcador invisível a 320px do topo: quando sai da tela, o usuário já rolou o suficiente
+    const sentinel = document.createElement('div');
+    sentinel.setAttribute('aria-hidden', 'true');
+    sentinel.style.cssText = 'position:absolute;top:320px;left:0;width:1px;height:1px;pointer-events:none;';
+    document.body.appendChild(sentinel);
+
+    let scrolled = false;
+    const zones = new Set();
+    const update = () => bar.classList.toggle('is-visible', scrolled && zones.size === 0);
+
+    new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      scrolled = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+      update();
+    }).observe(sentinel);
+
+    // Contato, rodapé e encerramento do index já oferecem o próprio CTA
+    const hideZones = document.querySelectorAll('#contato, .footer, .who__closing .sign');
+    if (hideZones.length) {
+      const zoneObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) zones.add(entry.target);
+          else zones.delete(entry.target);
+        });
+        update();
+      }, { rootMargin: '0px 0px -12% 0px' });
+      hideZones.forEach((zone) => zoneObserver.observe(zone));
+    }
+  }
+
+  /* =====================================================================
      CARROSSEL (3 cards visíveis, loop infinito, autoplay 2,3s)
      ===================================================================== */
   class Carousel {
@@ -829,6 +1025,9 @@
   initScrollProgress();
   initPageTransition();
   initReveal();
+  initImageReveal();
+  initWhatsAppModal();
+  initCtaBar();
   initCardFloat();
   const carousel = initCarousel();
   initServicesTransition(carousel);

@@ -72,7 +72,7 @@
           <span class="hero__line" aria-hidden="true"></span>
           <h1 class="hero__title">Cuidado profissional <br class="hero__br">no conforto da sua casa</h1>
           <p class="hero__subtitle">Assistência domiciliar de enfermagem</p>
-          <a class="btn btn--hero" href="https://wa.me/5516992502596" target="_blank" rel="noopener noreferrer">
+          <a class="btn btn--hero" href="https://wa.me/5516992502596" target="_blank" rel="noopener noreferrer" data-wa-modal>
             <span class="btn__label">Agendar atendimento</span>
             <svg class="btn__arrow" width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden="true">
               <path d="M0 6h24M19 1l5 5-5 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
@@ -144,7 +144,7 @@
         <div class="about__gallery reveal reveal--right" style="--d: 300ms">
           <p class="about__script" aria-hidden="true">Cuidar<br>também faz parte<br>de quem sou <span class="about__heart">♡</span></p>
 
-          <div class="carousel" id="carousel" aria-roledescription="carrossel" aria-label="Fotos da Sara">
+          <div class="carousel img-reveal-slides" id="carousel" style="--reveal-color: var(--linen); --wipe-d: 380ms" aria-roledescription="carrossel" aria-label="Fotos da Sara">
             <div class="carousel__viewport">
               <ul class="carousel__track">
                 <li class="carousel__slide"><img src="Assets/img - Sara - 1.jpeg" alt="Sara em frente ao Museu do Louvre, em Paris" style="object-position: 50% 20%" loading="eager" decoding="async"></li>
@@ -226,7 +226,7 @@
           </ol>
 
           <div class="services__gallery" data-reveal="0.25">
-            <div class="carousel carousel--patients reveal reveal--rise" id="patientsCarousel" aria-roledescription="carrossel" aria-label="Fotos de atendimentos">
+            <div class="carousel carousel--patients reveal reveal--rise img-reveal-slides" style="--reveal-color: var(--sand); --wipe-d: 220ms" id="patientsCarousel" aria-roledescription="carrossel" aria-label="Fotos de atendimentos">
               <div class="carousel__viewport">
                 <ul class="carousel__track">
                   <li class="carousel__slide"><img src="Assets/img - paciente - 1.jpeg" alt="Paciente sorrindo durante atendimento domiciliar" style="object-position: 50% 62%" loading="lazy" decoding="async"></li>
@@ -294,7 +294,7 @@
         </div>
 
         <div class="who__visual reveal reveal--right" style="--d: 300ms">
-          <figure class="who__photo img-reveal" style="--wipe-d: 420ms">
+          <figure class="who__photo img-reveal" style="--reveal-color: var(--linen); --wipe-d: 320ms">
             <img src="Assets/img - seção - 4.png" alt="Enfermeira segurando as mãos de uma paciente idosa em casa" loading="lazy" decoding="async">
           </figure>
 
@@ -427,7 +427,7 @@
   <div class="traveler" id="traveler" aria-hidden="true"><img src="" alt=""></div>
 
   <!-- WhatsApp flutuante -->
-  <a class="wa-float" href="https://wa.me/5516992502596" target="_blank" rel="noopener noreferrer" aria-label="Falar com Sara pelo WhatsApp"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 0 0-7.3 12.8L3.5 20.5l4.3-1.1A8.5 8.5 0 1 0 12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.1 8.6c.2-.5.5-.5.8-.5h.5c.2 0 .4.1.5.4l.5 1.3c.1.2 0 .4-.1.6l-.5.6c.6 1.2 1.5 2.1 2.7 2.7l.6-.5c.2-.2.4-.2.6-.1l1.3.5c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.7.4-1.5.3-2.3 0-2.1-.9-3.7-2.4-4.5-4.5-.3-.8-.4-1.6 0-2.3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></a>
+  <a class="wa-float" href="https://wa.me/5516992502596" target="_blank" rel="noopener noreferrer" aria-label="Falar com Sara pelo WhatsApp" data-wa-modal><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 0 0-7.3 12.8L3.5 20.5l4.3-1.1A8.5 8.5 0 1 0 12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.1 8.6c.2-.5.5-.5.8-.5h.5c.2 0 .4.1.5.4l.5 1.3c.1.2 0 .4-.1.6l-.5.6c.6 1.2 1.5 2.1 2.7 2.7l.6-.5c.2-.2.4-.2.6-.1l1.3.5c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.7.4-1.5.3-2.3 0-2.1-.9-3.7-2.4-4.5-4.5-.3-.8-.4-1.6 0-2.3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></a>
 
   <script src="js/main.js" defer></script>
 </body>
