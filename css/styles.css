@@ -1284,6 +1284,137 @@ body.menu-open { overflow: hidden; }
 }
 
 /* =====================================================================
+   NA PRÁTICA (galeria de procedimentos, entre as seções 3 e 4)
+   Fundo creme liso: as faixas de transição de .services e .who já
+   terminam nesse tom, então a seção se encaixa sem emendas.
+   ===================================================================== */
+.practice {
+  position: relative;
+  background: var(--cream);
+  padding-block: clamp(72px, 10vh, 120px) clamp(80px, 11vh, 130px);
+}
+
+.practice__head { max-width: 720px; }
+
+.practice__label {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: clamp(0.72rem, 0.82vw, 0.85rem);
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.practice__label-line {
+  width: clamp(48px, 5vw, 84px);
+  height: 1px;
+  background: var(--ink-line);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 900ms var(--ease-out) calc(var(--d, 0ms) + 260ms);
+}
+.is-visible .practice__label-line { transform: scaleX(1); }
+
+.practice__title {
+  margin-top: clamp(16px, 1.8vw, 28px);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 4.2vw, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.practice__intro {
+  margin-top: clamp(14px, 1.5vw, 22px);
+  font-size: clamp(1.05rem, 1.35vw, 1.4rem);
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.practice__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(20px, 2.2vw, 36px);
+  margin-top: clamp(40px, 5vw, 72px);
+}
+
+.practice__card { display: flex; flex-direction: column; }
+
+.practice__photo {
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 26px 50px -30px rgba(70, 50, 35, 0.45);
+  background: var(--linen);
+}
+.practice__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.practice__num {
+  margin-top: clamp(18px, 1.6vw, 24px);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--caramel-deep);
+}
+
+.practice__name {
+  margin: 6px 0 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(1.45rem, 1.7vw, 1.8rem);
+  line-height: 1.12;
+  color: var(--ink);
+}
+
+.practice__text {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .practice__photo.is-reveal-done img { transition: transform 600ms var(--ease-out); }
+  .practice__card:hover .practice__photo.is-reveal-done img { transform: scale(1.035); }
+}
+
+@media (max-width: 1180px) {
+  .practice__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 28px; }
+  .practice__photo { aspect-ratio: 5 / 4; }
+}
+
+/* Mobile: os cards viram uma faixa horizontal com snap, como um carrossel leve */
+@media (max-width: 640px) {
+  .practice__grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 78%;
+    gap: 16px;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    padding-bottom: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .practice__grid::-webkit-scrollbar { display: none; }
+  .practice__card { scroll-snap-align: start; }
+  .practice__photo { aspect-ratio: 4 / 5; border-radius: 20px; }
+}
+
+/* =====================================================================
    PARA QUEM É INDICADO (seção 4)
    ===================================================================== */
 .who {
@@ -3324,7 +3455,18 @@ html.wa-lock body { overflow: hidden; }
 @media (max-width: 900px) {
   .hero__content { max-width: 100%; transform: none; }
   .hero__inner { justify-content: flex-end; padding-bottom: clamp(120px, 16vh, 160px); }
-  .hero__bg { background-position: 60% 50%; }
+  /* Em telas retrato o "cover" cortava a placa (objeto à direita da imagem).
+     Aqui a imagem é dimensionada pela largura e ancorada à direita, logo
+     abaixo do header, para a placa caber inteira; o restante vira creme. */
+  .hero__bg {
+    --hero-w: 170vw;
+    --hero-y: 64px;
+    background:
+      linear-gradient(180deg, rgba(var(--cream-rgb), 0) 62%, var(--cream) 100%)
+        right var(--hero-y) / var(--hero-w) calc(var(--hero-w) * 0.5628) no-repeat,
+      url("../Assets/fundo - hero.png") right var(--hero-y) / var(--hero-w) auto no-repeat,
+      var(--cream);
+  }
   .hero__veil {
     background:
       linear-gradient(180deg,
@@ -3374,7 +3516,7 @@ html.wa-lock body { overflow: hidden; }
   .hero__br { display: none; }
   .hero__title { font-size: clamp(2.35rem, 10.4vw, 3rem); }
   .hero__subtitle { font-size: 0.95rem; letter-spacing: 0.04em; }
-  .hero__bg { background-position: 58% 50%; }
+  .hero__bg { --hero-w: 205vw; }
   .hero__line { margin-bottom: 24px; }
 
   .about { padding-block: 104px 72px; }

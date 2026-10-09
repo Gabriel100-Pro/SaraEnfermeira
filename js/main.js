@@ -474,7 +474,7 @@
      com a mensagem já preenchida. Sem JavaScript, o href original do CTA
      continua levando direto ao WhatsApp.
      ===================================================================== */
-  const WA_NUMBER = '5516992502596';
+  const WA_NUMBER = '5516991519048';
   const WA_OPTIONS = [
     { label: 'Curativos e feridas', message: 'Olá, Sara! Gostaria de saber mais sobre atendimento domiciliar para curativos e cuidados com feridas.' },
     { label: 'Administração de medicamentos', message: 'Olá, Sara! Gostaria de saber mais sobre atendimento domiciliar para administração de medicamentos.' },
