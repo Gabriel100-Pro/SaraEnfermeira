@@ -1337,8 +1337,8 @@ body.menu-open { overflow: hidden; }
 
 .practice__grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(20px, 2.2vw, 36px);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(40px, 3.5vw, 56px) clamp(18px, 1.8vw, 30px);
   margin-top: clamp(40px, 5vw, 72px);
 }
 
